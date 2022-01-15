@@ -3,24 +3,25 @@ from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from rest_framework.pagination import LimitOffsetPagination
 
 from posts.models import Group, Post, Follow, User
 from .permissions import AuthorOrReadOnly
-from .serializers import CommentSerializer, GroupSerializer, PostSerializer, FollowSerializer
-from .pagination import YatubePagination
+from .serializers import (CommentSerializer, GroupSerializer,
+                          PostSerializer, FollowSerializer)
 
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
     permission_classes = [AuthorOrReadOnly]
-    pagination_class = YatubePagination
+    pagination_class = LimitOffsetPagination
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
 
-class GroupViewSet(viewsets.ModelViewSet):
+class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [AuthorOrReadOnly]
@@ -43,20 +44,27 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 
 class FollowViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
     serializer_class = FollowSerializer
     permission_classes = [IsAuthenticated]
-    pagination_class = YatubePagination
 
     filter_backends = (filters.SearchFilter,)
-    search_fields = ('author')
+    search_fields = ('following__username')
 
-    def perform_create(self, serializer):
-        following = self.kwargs.get('following')
-        user = self.request.user
-        author = get_object_or_404(User, user=following)
-        serializer.save(user=user, author=author)
 
-    def get_queryset(self):
-        user = self.request.user
-        new_queryset = user.following.all()
-        return new_queryset
+
+
+
+#    def perform_create(self, serializer):
+#        author_username = serializer.data.get('following')
+#        author = get_object_or_404(User, username=author_username)
+#        serializer.save(following=author, user=self.request.user)
+#        following = serializer.data.get('following')
+#        user = self.request.user
+#        author = get_object_or_404(User, user=following)
+#        serializer.save(user=user, author=author)
+
+#    def get_queryset(self):
+#        user = get_object_or_404(User, user=self.request.user)
+#        new_queryset = user.following.all()
+#        return new_queryset
