@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.relations import SlugRelatedField
 from rest_framework.exceptions import ParseError
 from django.shortcuts import get_object_or_404
-
+from rest_framework.validators import UniqueTogetherValidator
 
 from posts.models import Comment, Follow, Group, Post, User
 
@@ -21,7 +21,6 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     author = SlugRelatedField(slug_field='username', read_only=True)
-#    comments = SlugRelatedField(many=True, read_only=True, slug_field='text')
     comments = CommentSerializer(read_only=True, many=True)
 
     class Meta:
@@ -43,35 +42,25 @@ class FollowSerializer(serializers.ModelSerializer):
         model = Follow
         fields = ('id', 'user', 'following')
 
-    def create(self, validated_data):
+    def validate(self, data):
+        if not self.initial_data.get('following'):
+            raise serializers.ValidationError(
+                'Переменная following не передана в запросе')
+
         request = self.context.get('request')
         following = self.initial_data.get('following')
 
-        if not self.initial_data.get('following'):
-            raise ParseError(
-                detail="No following variable provided",
-                code=status.HTTP_400_BAD_REQUEST,
-            )
         if not User.objects.filter(username=following).exists():
-            raise ParseError(
-                detail="such user doesn't exist",
-                code=status.HTTP_400_BAD_REQUEST,
-            )
+            raise serializers.ValidationError(
+                'Такого пользователя не существует')
 
-        author = get_object_or_404(User,
-                                   username=following)
-        user = get_object_or_404(User,
-                                 username=request.user.username)
+        author = User.objects.get(username=following)
         if author == request.user:
-            raise ParseError(
-                detail="User can't follow himself",
-                code=status.HTTP_400_BAD_REQUEST,
-            )
+            raise serializers.ValidationError(
+                'Нельзя подписаться на самого себя')
+
         if Follow.objects.filter(following=author,
                                  user=request.user).exists():
-            raise ParseError(
-                detail="User can't follow same author twice",
-                code=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Follow.objects.create(user=user, following=author)
+            raise serializers.ValidationError(
+                'Вы уже подписаны на данного автора')
+        return data
