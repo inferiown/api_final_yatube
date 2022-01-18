@@ -1,9 +1,5 @@
 from rest_framework import serializers
-from rest_framework import status
 from rest_framework.relations import SlugRelatedField
-from rest_framework.exceptions import ParseError
-from django.shortcuts import get_object_or_404
-from rest_framework.validators import UniqueTogetherValidator
 
 from posts.models import Comment, Follow, Group, Post, User
 
