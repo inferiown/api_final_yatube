@@ -58,26 +58,3 @@ class FollowSerializer(serializers.ModelSerializer):
                 'Нельзя подписаться на самого себя'
             )
         return value
-
-#    def validate(self, data):
-#        if not self.initial_data.get('following'):
-#            raise serializers.ValidationError(
-#                'Переменная following не передана в запросе')
-#
-#        request = self.context.get('request')
-#        following = self.initial_data.get('following')
-#
-#        if not User.objects.filter(username=following).exists():
-#            raise serializers.ValidationError(
-#                'Такого пользователя не существует')
-#
-#        author = User.objects.get(username=following)
-#        if author == request.user:
-#            raise serializers.ValidationError(
-#                'Нельзя подписаться на самого себя')
-#
-#        if Follow.objects.filter(following=author,
-#                                 user=request.user).exists():
-#            raise serializers.ValidationError(
-#                'Вы уже подписаны на данного автора')
-#        return data
